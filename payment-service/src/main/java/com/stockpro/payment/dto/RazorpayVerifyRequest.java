@@ -1,0 +1,23 @@
+package com.stockpro.payment.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.*;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class RazorpayVerifyRequest {
+
+    @NotBlank(message = "Razorpay order ID is required")
+    private String razorpayOrderId;
+
+    @NotBlank(message = "Razorpay payment ID is required")
+    private String razorpayPaymentId;
+
+    @NotBlank(message = "Razorpay signature is required")
+    private String razorpaySignature;
+
+    private Long internalPaymentId;   // our DB payment ID to update on success
+}
