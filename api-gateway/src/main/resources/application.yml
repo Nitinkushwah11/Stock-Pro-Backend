@@ -1,0 +1,186 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+
+            # Swagger/OpenAPI docs routed through the gateway
+            - id: auth-service-api-docs
+              uri: lb://auth-service
+              predicates:
+                - Path=/v3/api-docs/auth-service
+              filters:
+                - RewritePath=/v3/api-docs/auth-service, /v3/api-docs
+
+            - id: product-service-api-docs
+              uri: lb://product-service
+              predicates:
+                - Path=/v3/api-docs/product-service
+              filters:
+                - RewritePath=/v3/api-docs/product-service, /v3/api-docs
+
+            - id: warehouse-service-api-docs
+              uri: lb://warehouse-service
+              predicates:
+                - Path=/v3/api-docs/warehouse-service
+              filters:
+                - RewritePath=/v3/api-docs/warehouse-service, /v3/api-docs
+
+            - id: supplier-service-api-docs
+              uri: lb://supplier-service
+              predicates:
+                - Path=/v3/api-docs/supplier-service
+              filters:
+                - RewritePath=/v3/api-docs/supplier-service, /v3/api-docs
+
+            - id: movement-service-api-docs
+              uri: lb://movement-service
+              predicates:
+                - Path=/v3/api-docs/movement-service
+              filters:
+                - RewritePath=/v3/api-docs/movement-service, /v3/api-docs
+
+            - id: alert-service-api-docs
+              uri: lb://alert-service
+              predicates:
+                - Path=/v3/api-docs/alert-service
+              filters:
+                - RewritePath=/v3/api-docs/alert-service, /v3/api-docs
+
+            - id: report-service-api-docs
+              uri: lb://report-service
+              predicates:
+                - Path=/v3/api-docs/report-service
+              filters:
+                - RewritePath=/v3/api-docs/report-service, /v3/api-docs
+
+            - id: purchase-service-api-docs
+              uri: lb://purchase-service
+              predicates:
+                - Path=/v3/api-docs/purchase-service
+              filters:
+                - RewritePath=/v3/api-docs/purchase-service, /v3/api-docs
+
+            - id: payment-service-api-docs
+              uri: lb://payment-service
+              predicates:
+                - Path=/v3/api-docs/payment-service
+              filters:
+                - RewritePath=/v3/api-docs/payment-service, /v3/api-docs
+
+            # Route 1: Auth Service
+            - id: auth-service
+              uri: lb://auth-service
+              predicates:
+                - Path=/auth/**
+
+            # Route 2: Product Service 
+            - id: product-service
+              uri: lb://product-service
+              predicates:
+                - Path=/products/**
+
+            # Route 3: Warehouse Service 
+            - id: warehouse-service
+              uri: lb://warehouse-service
+              predicates:
+                - Path=/warehouse/**
+
+            # Route 4: Supplier Service
+            - id: supplier-service
+              uri: lb://supplier-service
+              predicates:
+                - Path=/suppliers/**
+
+            # Route 5: Movement Service
+            - id: movement-service
+              uri: lb://movement-service
+              predicates:
+                - Path=/movements/**
+
+            # Route 6: Alert Service
+            - id: alert-service
+              uri: lb://alert-service
+              predicates:
+                - Path=/alerts/**
+
+            # Route 7: Report Service
+            - id: report-service
+              uri: lb://report-service
+              predicates:
+                - Path=/reports/**
+
+            # Route 8: Purchase Service
+            - id: purchase-service
+              uri: lb://purchase-service
+              predicates:
+                - Path=/purchase-orders/**
+
+            # Route 9: Payment Service
+            - id: payment-service
+              uri: lb://payment-service
+              predicates:
+                - Path=/payments,/payments/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    ip-address: 127.0.0.1
+    hostname: localhost
+
+jwt:
+  secret: "${JWT_SECRET}"
+  expiration: "${JWT_EXPIRATION:86400000}"
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: API Gateway
+        url: /v3/api-docs
+      - name: Auth Service
+        url: /v3/api-docs/auth-service
+      - name: Product Service
+        url: /v3/api-docs/product-service
+      - name: Warehouse Service
+        url: /v3/api-docs/warehouse-service
+      - name: Supplier Service
+        url: /v3/api-docs/supplier-service
+      - name: Movement Service
+        url: /v3/api-docs/movement-service
+      - name: Alert Service
+        url: /v3/api-docs/alert-service
+      - name: Report Service
+        url: /v3/api-docs/report-service
+      - name: Purchase Service
+        url: /v3/api-docs/purchase-service
+      - name: Payment Service
+        url: /v3/api-docs/payment-service
+    urls-primary-name: API Gateway
+    operations-sorter: method
+    tags-sorter: alpha
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,loggers,gateway
+
+  endpoint:
+    health:
+      show-details: always
+
