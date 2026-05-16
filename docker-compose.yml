@@ -1,0 +1,273 @@
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - stockpro_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "15673:15672"
+
+  eureka-server:
+    build: ./StockPro-Backend/microservices/eureka-server
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: eureka-server
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: "false"
+      EUREKA_CLIENT_FETCH_REGISTRY: "false"
+
+  auth-service:
+    build: ./StockPro-Backend/microservices/auth-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m"
+      AUTH_DB_URL: ${AUTH_DB_URL}
+      AUTH_DB_USERNAME: ${AUTH_DB_USERNAME}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_AUTH: ${SMTP_AUTH}
+      SMTP_STARTTLS_ENABLE: ${SMTP_STARTTLS_ENABLE}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      FRONTEND_OAUTH_SUCCESS_URL: ${FRONTEND_OAUTH_SUCCESS_URL}
+      FRONTEND_PASSWORD_RESET_URL: ${FRONTEND_PASSWORD_RESET_URL}
+      PASSWORD_RESET_EXPIRATION_MINUTES: ${PASSWORD_RESET_EXPIRATION_MINUTES}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      EUREKA_INSTANCE_HOSTNAME: auth-service
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+
+  product-service:
+    build: ./StockPro-Backend/microservices/product-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m"
+      PRODUCT_DB_URL: ${PRODUCT_DB_URL}
+      PRODUCT_DB_USERNAME: ${PRODUCT_DB_USERNAME}
+      PRODUCT_DB_PASSWORD: ${PRODUCT_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      EUREKA_INSTANCE_HOSTNAME: product-service
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+
+  warehouse-service:
+    build: ./StockPro-Backend/microservices/warehouse-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m"
+      WAREHOUSE_DB_URL: ${WAREHOUSE_DB_URL}
+      WAREHOUSE_DB_USERNAME: ${WAREHOUSE_DB_USERNAME}
+      WAREHOUSE_DB_PASSWORD: ${WAREHOUSE_DB_PASSWORD}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      EUREKA_INSTANCE_HOSTNAME: warehouse-service
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+
+  purchase-service:
+    build: ./StockPro-Backend/microservices/purchase-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m"
+      PURCHASE_DB_URL: ${PURCHASE_DB_URL}
+      PURCHASE_DB_USERNAME: ${PURCHASE_DB_USERNAME}
+      PURCHASE_DB_PASSWORD: ${PURCHASE_DB_PASSWORD}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      EUREKA_INSTANCE_HOSTNAME: purchase-service
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+
+  supplier-service:
+    build: ./StockPro-Backend/microservices/supplier-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m"
+      SUPPLIER_DB_URL: ${SUPPLIER_DB_URL}
+      SUPPLIER_DB_USERNAME: ${SUPPLIER_DB_USERNAME}
+      SUPPLIER_DB_PASSWORD: ${SUPPLIER_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      EUREKA_INSTANCE_HOSTNAME: supplier-service
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+
+  movement-service:
+    build: ./StockPro-Backend/microservices/movement-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m"
+      MOVEMENT_DB_URL: ${MOVEMENT_DB_URL}
+      MOVEMENT_DB_USERNAME: ${MOVEMENT_DB_USERNAME}
+      MOVEMENT_DB_PASSWORD: ${MOVEMENT_DB_PASSWORD}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      EUREKA_INSTANCE_HOSTNAME: movement-service
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+
+  alert-service:
+    build: ./StockPro-Backend/microservices/alert-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m"
+      ALERT_DB_URL: ${ALERT_DB_URL}
+      ALERT_DB_USERNAME: ${ALERT_DB_USERNAME}
+      ALERT_DB_PASSWORD: ${ALERT_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      EUREKA_INSTANCE_HOSTNAME: alert-service
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+
+  report-service:
+    build: ./StockPro-Backend/microservices/report-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      movement-service:
+        condition: service_started
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m"
+      REPORT_DB_URL: ${REPORT_DB_URL}
+      REPORT_DB_USERNAME: ${REPORT_DB_USERNAME}
+      REPORT_DB_PASSWORD: ${REPORT_DB_PASSWORD}
+      MOVEMENT_SERVICE_URL: ${MOVEMENT_SERVICE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      EUREKA_INSTANCE_HOSTNAME: report-service
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+
+  payment-service:
+    build: ./StockPro-Backend/microservices/payment-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m"
+      PAYMENT_DB_URL: ${PAYMENT_DB_URL}
+      PAYMENT_DB_USERNAME: ${PAYMENT_DB_USERNAME}
+      PAYMENT_DB_PASSWORD: ${PAYMENT_DB_PASSWORD}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      EUREKA_INSTANCE_HOSTNAME: payment-service
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+
+  api-gateway:
+    build: ./StockPro-Backend/microservices/api-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      eureka-server:
+        condition: service_started
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m"
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      EUREKA_INSTANCE_HOSTNAME: api-gateway
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+
+  admin-server:
+    build: ./StockPro-Backend/microservices/admin-server
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    depends_on:
+      eureka-server:
+        condition: service_started
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xms64m -Xmx256m"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE}
+      EUREKA_INSTANCE_HOSTNAME: admin-server
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
+
+volumes:
+  stockpro_mysql_data:
